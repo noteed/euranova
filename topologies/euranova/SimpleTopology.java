@@ -36,10 +36,14 @@ import backtype.storm.utils.Utils;
 
 import java.lang.System;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Deque;
 import java.util.Random;
 
 /**
@@ -226,6 +230,79 @@ public class SimpleTopology {
     }
   }
 
+  // No tuple ?
+  public static class Pair {
+    String model;
+    Integer count;
+
+    public Pair(String model, Integer count) {
+      super();
+      this.model = model;
+      this.count = count;
+    }
+  }
+
+  public static class PairComparator implements Comparator<Pair> {
+    @Override
+    public int compare(Pair a, Pair b) {
+      return b.count - a.count;
+    }
+  }
+
+  public static class BestModelBolt extends BaseBasicBolt {
+    LinkedList<Pair> counts = new LinkedList<Pair>();
+    long t0 = 0; // Beginning of current tick (frame ?)
+    static final long TICK_SIZE = 1000; // In milliseconds
+    static final long N_BEST = 3; // How many best models should be reported.
+    static int generation = 0; // Simple way to group messages together.
+                               // TODO See to use a single (bigger) message.
+
+    @Override
+    public void execute(Tuple tuple, BasicOutputCollector collector) {
+      if (t0 == 0)
+        t0 = System.currentTimeMillis();
+      long t1 = System.currentTimeMillis();
+
+      if (t1 - t0 > TICK_SIZE) {
+        // Transition to a new tick.
+
+        generation += 1;
+
+        // We emit the best sums.
+        for (Pair entry : counts) {
+          collector.emit(new Values(entry.model, entry.count, generation));
+        }
+
+        while (t1 - t0 > TICK_SIZE) {
+          t0 += TICK_SIZE;
+        }
+      }
+
+      // Remove existing model if any, then add the new one, sort everything,
+      // keep the n best ones.
+      String model = tuple.getString(0);
+      Integer count = tuple.getInteger(1);
+      Iterator<Pair> it = counts.iterator();
+      while (it.hasNext()) {
+        Pair entry = it.next();
+        if (entry.model == model) {
+          it.remove();
+          break;
+        }
+      }
+      counts.add(new Pair(model, count));
+      if (counts.size() > N_BEST) {
+        Collections.sort(counts, new PairComparator());
+        counts.removeLast();
+      }
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+      declarer.declare(new Fields("models", "count", "generation"));
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     TopologyBuilder builder = new TopologyBuilder();
 
@@ -236,6 +313,8 @@ public class SimpleTopology {
       .fieldsGrouping("models", new Fields("model"));
     builder.setBolt("rolling", new RollingModelCountBolt(), 3)
       .fieldsGrouping("models", new Fields("model"));
+    builder.setBolt("best", new BestModelBolt(), 1)
+      .globalGrouping("rolling");
 
     Config conf = new Config();
     conf.setDebug(true);

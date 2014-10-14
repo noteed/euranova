@@ -53,6 +53,10 @@ It seems that for coarser granularity (e.g. one hour, one day and more), a time
 series database could provide a persistent store. I don't know at which scale
 Storm would make sense but not storing data points in a time series database.
 
+Computing the best models can be done in its own bolt. The computation can
+happen purely driven by messages from the rolling count bolt. Identical values
+(for a given model) can be sent once.
+
 ## Questions
 
 Cash registers send messages to a message bus. It seems a Storm spout must be
@@ -75,7 +79,9 @@ Should the current hour (or current week, etc) be updated before its ending ?
 Would it make sense to have a spout serving as a tick (instead of having a bolt
 querying its own clock, possibly in a thread) ? (Or injecting messages with
 zero items if not enough actual messages are produced. We should make sure to
-hit all relevant bolts.)
+hit all relevant bolts.) I guess it is conceptually clearer to send messages
+when they are actually needed for the computation, and rely on an internal
+timer if we want the bolt to send messages at a different pace.
 
 ## Docker images
 
