@@ -49,6 +49,10 @@ large. Another possibility is to push those data repeatedly even though they
 are not actually updated. That seems awkward for really old/infrequently
 updated data.
 
+It seems that for coarser granularity (e.g. one hour, one day and more), a time
+series database could provide a persistent store. I don't know at which scale
+Storm would make sense but not storing data points in a time series database.
+
 ## Questions
 
 Cash registers send messages to a message bus. It seems a Storm spout must be
@@ -67,6 +71,10 @@ https://storm.apache.org/documentation/Trident-tutorial.html).
 
 What does real-time mean ? How often the "last hour" window must be updated ?
 Should the current hour (or current week, etc) be updated before its ending ?
+
+Would it make sense to have a spout serving as a tick (instead of having a bolt
+querying its own clock, possibly in a thread) ? (Or injecting messages with
+zero items if not enough actual messages are produced.)
 
 ## Docker images
 

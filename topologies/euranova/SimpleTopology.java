@@ -34,6 +34,8 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import java.lang.System;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -103,16 +105,44 @@ public class SimpleTopology {
 
   public static class ModelCountBolt extends BaseBasicBolt {
     Map<String, Integer> counts = new HashMap<String, Integer>();
+    long t0 = 0; // Beginning of current time window
+    static final long WINDOW_SIZE = 1000; // In milliseconds
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
-      String word = tuple.getString(0);
-      Integer count = counts.get(word);
+      if (t0 == 0)
+        t0 = System.currentTimeMillis();
+      long t1 = System.currentTimeMillis();
+
+      if (t1 - t0 > WINDOW_SIZE) {
+        // Transition to a new time window.
+
+        // We emit the current sums. This assumes that this execute() method
+        // is called frequently to emit the sums in a timely manner.
+        // To ensure this is the case, the spout can emit additional messages
+        // or a thread could be added to this bolt.
+        // Would it be better for each sum to have its own t0 (i.e. its own
+        // time window), instead of emitting all the sums at once ?
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+          collector.emit(new Values(entry.getKey(), entry.getValue()));
+        }
+
+        // TODO Better to reset existing values ?
+        counts = new HashMap<String, Integer>();
+
+        // Advance to the beginning of the new window. If execute() is called
+        // frequently as suggested above, this is a single iteration.
+        while (t1 - t0 > WINDOW_SIZE) {
+          t0 += WINDOW_SIZE;
+        }
+      }
+
+      String model = tuple.getString(0);
+      Integer count = counts.get(model);
       if (count == null)
         count = 0;
       count += tuple.getInteger(1);
-      counts.put(word, count);
-      collector.emit(new Values(word, count));
+      counts.put(model, count);
     }
 
     @Override
