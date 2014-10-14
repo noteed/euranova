@@ -75,9 +75,15 @@ https://github.com/apache/storm/tree/master/examples/storm-starter.
 
 Run the image with:
 
-    > docker run -t -i noteed/storm-starter bash
+    > docker run -t -i \
+        -v -v `pwd`/topologies/euranova:/home/storm/src/examples/storm-starter/src/jvm/euranova \
+        noteed/storm-starter bash
 
-Within the container, compile the examples
+This makes the local `topologies/euranova` directory available within the
+container's Storm examples.
+
+Within the container, compile the examples (and the local solutions, if
+present):
 
     > cd src/examples/storm-starter
     > mvn compile
@@ -85,3 +91,7 @@ Within the container, compile the examples
 To run the Exclamation example:
 
     > mvn exec:java -Dstorm.topology=storm.starter.ExclamationTopology
+
+To run the simple solution:
+
+    > mvn exec:java -Dstorm.topology=euranova.SimpleTopology

@@ -34,3 +34,4 @@ RUN wget -q -O - \
   http://apache.cu.be/incubator/storm/apache-storm-0.9.2-incubating/apache-storm-0.9.2-incubating-src.tar.gz \
   | tar -xzf -
 RUN mv apache-storm-0.9.2-incubating src
+# RUN cd src/examples/storm-starter ; mvn compile
