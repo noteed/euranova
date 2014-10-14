@@ -105,8 +105,8 @@ public class SimpleTopology {
 
   public static class ModelCountBolt extends BaseBasicBolt {
     Map<String, Integer> counts = new HashMap<String, Integer>();
-    long t0 = 0; // Beginning of current time window
-    static final long WINDOW_SIZE = 1000; // In milliseconds
+    long t0 = 0; // Beginning of current tick (frame ?)
+    static final long TICK_SIZE = 1000; // In milliseconds
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
@@ -114,15 +114,15 @@ public class SimpleTopology {
         t0 = System.currentTimeMillis();
       long t1 = System.currentTimeMillis();
 
-      if (t1 - t0 > WINDOW_SIZE) {
-        // Transition to a new time window.
+      if (t1 - t0 > TICK_SIZE) {
+        // Transition to a new tick.
 
         // We emit the current sums. This assumes that this execute() method
         // is called frequently to emit the sums in a timely manner.
         // To ensure this is the case, the spout can emit additional messages
         // or a thread could be added to this bolt.
         // Would it be better for each sum to have its own t0 (i.e. its own
-        // time window), instead of emitting all the sums at once ?
+        // tick window), instead of emitting all the sums at once ?
         for (Map.Entry<String, Integer> entry : counts.entrySet()) {
           collector.emit(new Values(entry.getKey(), entry.getValue()));
         }
@@ -130,10 +130,10 @@ public class SimpleTopology {
         // TODO Better to reset existing values ?
         counts = new HashMap<String, Integer>();
 
-        // Advance to the beginning of the new window. If execute() is called
+        // Advance to the beginning of the new tick. If execute() is called
         // frequently as suggested above, this is a single iteration.
-        while (t1 - t0 > WINDOW_SIZE) {
-          t0 += WINDOW_SIZE;
+        while (t1 - t0 > TICK_SIZE) {
+          t0 += TICK_SIZE;
         }
       }
 
