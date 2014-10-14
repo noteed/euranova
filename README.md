@@ -25,7 +25,7 @@ mentionned.
 From the Storm tutorial, it seems that the "fields grouping" would be
 appropriate to count model items.
 
-Somthing like
+Something like
 
 ```
 java TopologyBuilder builder = new TopologyBuilder();
@@ -81,7 +81,13 @@ querying its own clock, possibly in a thread) ? (Or injecting messages with
 zero items if not enough actual messages are produced. We should make sure to
 hit all relevant bolts.) I guess it is conceptually clearer to send messages
 when they are actually needed for the computation, and rely on an internal
-timer if we want the bolt to send messages at a different pace.
+timer if we want the bolt to send messages at a different pace. Storm supports
+so-called Tick tuples, which are exactly what's written on the tin.
+
+Mmm... From a cursory glance at this blog post[0], it seems the exact same
+thing as the case...
+
+[0]: http://www.michael-noll.com/blog/2013/01/18/implementing-real-time-trending-topics-in-storm/#excursus-tick-tuples-in-storm-08
 
 ## Docker images
 
