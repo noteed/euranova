@@ -42,6 +42,13 @@ queue). It makes it possible to discard old messages easily. A possible problem
 is to discard a message that arrives out-of-order, after the "last" message of
 a time window, and miss it in the current count.
 
+It seems we also have to keep track of static data (past aggregated data). They
+would be used as initial data when loading the graphical view before new values
+are pushed to it. This is especially true if the time window is relatively
+large. Another possibility is to push those data repeatedly even though they
+are not actually updated. That seems awkward for really old/infrequently
+updated data.
+
 ## Questions
 
 Cash registers send messages to a message bus. It seems a Storm spout must be
@@ -57,3 +64,24 @@ Is overcounting a problem ? If yes, see
 https://storm.apache.org/documentation/Transactional-topologies.html
 (which itself actually directs to
 https://storm.apache.org/documentation/Trident-tutorial.html).
+
+What does real-time mean ? How often the "last hour" window must be updated ?
+Should the current hour (or current week, etc) be updated before its ending ?
+
+## Docker images
+
+`images/storm-starter` is an in-progress Docker image to try
+https://github.com/apache/storm/tree/master/examples/storm-starter.
+
+Run the image with:
+
+    > docker run -t -i noteed/storm-starter bash
+
+Within the container, compile the examples
+
+    > cd src/examples/storm-starter
+    > mvn compile
+
+To run the Exclamation example:
+
+    > mvn exec:java -Dstorm.topology=storm.starter.ExclamationTopology
