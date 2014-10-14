@@ -23,8 +23,10 @@ import backtype.storm.StormSubmitter;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
@@ -32,6 +34,7 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -40,14 +43,14 @@ import java.util.Random;
  */
 public class SimpleTopology {
 
-  public static class TestWordSpout extends BaseRichSpout {
+  public static class TestModelSpout extends BaseRichSpout {
     SpoutOutputCollector _collector;
 
-    public TestWordSpout() {
+    public TestModelSpout() {
       this(true);
     }
 
-    public TestWordSpout(boolean isDistributed) {
+    public TestModelSpout(boolean isDistributed) {
     }
 
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -59,10 +62,11 @@ public class SimpleTopology {
 
     public void nextTuple() {
       Utils.sleep(100);
-      final String[] words = new String[] {"nathan", "mike", "jackson", "golda", "bertels"};
+      final String[] models = new String[] {"nathan", "mike", "jackson", "golda", "bertels"};
       final Random rand = new Random();
-      final String word = words[rand.nextInt(words.length)];
-      _collector.emit(new Values(word));
+      final String model = models[rand.nextInt(models.length)];
+      final int count = rand.nextInt(10);
+      _collector.emit(new Values(model, count));
     }
 
     public void ack(Object msgId) {
@@ -72,7 +76,7 @@ public class SimpleTopology {
     }
 
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("word"));
+      declarer.declare(new Fields("model", "count"));
     }
   }
 
@@ -86,24 +90,45 @@ public class SimpleTopology {
 
     @Override
     public void execute(Tuple tuple) {
-      _collector.emit(tuple, new Values(tuple.getString(0) + "!!!"));
+      final String marks = new String(new char[tuple.getInteger(1)]).replace("\0", "!");
+      _collector.emit(tuple, new Values(tuple.getString(0) + marks));
       _collector.ack(tuple);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("word"));
+      declarer.declare(new Fields("model"));
+    }
+  }
+
+  public static class ModelCountBolt extends BaseBasicBolt {
+    Map<String, Integer> counts = new HashMap<String, Integer>();
+
+    @Override
+    public void execute(Tuple tuple, BasicOutputCollector collector) {
+      String word = tuple.getString(0);
+      Integer count = counts.get(word);
+      if (count == null)
+        count = 0;
+      count += tuple.getInteger(1);
+      counts.put(word, count);
+      collector.emit(new Values(word, count));
     }
 
-
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+      declarer.declare(new Fields("models", "count"));
+    }
   }
 
   public static void main(String[] args) throws Exception {
     TopologyBuilder builder = new TopologyBuilder();
 
-    builder.setSpout("word", new TestWordSpout(), 10);
-    builder.setBolt("exclaim1", new ExclamationBolt(), 3).shuffleGrouping("word");
-    builder.setBolt("exclaim2", new ExclamationBolt(), 2).shuffleGrouping("exclaim1");
+    builder.setSpout("models", new TestModelSpout(), 10);
+    builder.setBolt("exclamations", new ExclamationBolt(), 3)
+      .fieldsGrouping("models", new Fields("model"));
+    builder.setBolt("sums", new ModelCountBolt(), 3)
+      .fieldsGrouping("models", new Fields("model"));
 
     Config conf = new Config();
     conf.setDebug(true);
