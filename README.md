@@ -74,7 +74,8 @@ Should the current hour (or current week, etc) be updated before its ending ?
 
 Would it make sense to have a spout serving as a tick (instead of having a bolt
 querying its own clock, possibly in a thread) ? (Or injecting messages with
-zero items if not enough actual messages are produced.)
+zero items if not enough actual messages are produced. We should make sure to
+hit all relevant bolts.)
 
 ## Docker images
 
