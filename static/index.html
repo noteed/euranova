@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<title>Storm Case</title>
+<pre>Models:</pre>
+<pre id="models" />
+<script language="javascript" type="text/javascript">
+  var uri = 'ws://172.17.06:7080/v2/broker/?topics=topic';
+
+  var ws = new WebSocket(uri);
+
+  ws.onopen = function(ev) {
+    console.log('open', ev);
+  }
+
+  ws.onclose = function(ev) {
+    console.log('close', ev);
+  }
+
+  ws.onmessage = function(ev) {
+    console.log('message', ev);
+
+    var f = document.getElementById("models").contentDocument;
+    var text = "";
+    var msg = JSON.parse(ev.data);
+
+    text = msg.message + "\n";
+
+    if (text.length) {
+      document.getElementById("models").innerHTML = text;
+    }
+  }
+
+  ws.onerror = function(ev) {
+    console.log('error', ev);
+  }
+</script>

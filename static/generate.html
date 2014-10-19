@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<meta charset="utf-8"/>
+<title>Storm Case</title>
+<script language="javascript" type="text/javascript">
+  var uri = 'ws://172.17.06:7080/v2/broker/';
+
+  var ws = new WebSocket(uri);
+
+  ws.onopen = function(ev) {
+    console.log('open', ev);
+  }
+
+  ws.onclose = function(ev) {
+    console.log('close', ev);
+  }
+
+  ws.onmessage = function(ev) {
+    console.log('message', ev);
+  }
+
+  ws.onerror = function(ev) {
+    console.log('error', ev);
+  }
+
+  setInterval(function() {
+    var message = {
+      topic: 'topic',
+      message: 'Some message at ' + new Date()
+    }
+    ws.send(JSON.stringify(message));
+  }, 1000)
+</script>

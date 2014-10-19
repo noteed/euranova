@@ -91,13 +91,15 @@ thing as the case...
 
 ## Docker images
 
+### Storm
+
 `images/storm-starter` is an in-progress Docker image to try
 https://github.com/apache/storm/tree/master/examples/storm-starter.
 
 Run the image with:
 
     > docker run -t -i \
-        -v -v `pwd`/topologies/euranova:/home/storm/src/examples/storm-starter/src/jvm/euranova \
+        -v `pwd`/topologies/euranova:/home/storm/src/examples/storm-starter/src/jvm/euranova \
         noteed/storm-starter bash
 
 This makes the local `topologies/euranova` directory available within the
@@ -116,3 +118,52 @@ To run the Exclamation example:
 To run the simple solution:
 
     > mvn exec:java -Dstorm.topology=euranova.SimpleTopology
+
+## Nginx
+
+    > docker run -d \
+        -p 80:80 \
+        -v `pwd`/static:/usr/share/nginx/www \
+        -v `pwd`/sites-enabled:/etc/nginx/sites-enabled \
+        noteed/nginx
+
+## Running
+
+Run the `launch.sh` script:
+
+    > ./launch.sh
+
+The kafka image can also be used to generate messages:
+
+    > docker run --rm --link zookeeper:zk -i -t wurstmeister/kafka:0.8.1.1-1 bash
+
+Then within the container:
+
+    > $KAFKA_HOME/bin/kafka-topics.sh --create --topic topic \
+        --partitions 4 --zookeeper $ZK_PORT_2181_TCP_ADDR --replication-factor 1
+    > $KAFKA_HOME/bin/kafka-topics.sh --describe --topic topic --zookeeper $ZK_PORT_2181_TCP_ADDR
+    > $KAFKA_HOME/bin/kafka-console-producer.sh --topic=topic --broker-list=172.17.0.3:9292
+
+Or to consume the messages:
+
+    > $KAFKA_HOME/bin/kafka-console-consumer.sh --topic=topic --zookeeper=$ZK_PORT_2181_TCP_ADDR
+
+Run the websocket server:
+
+    > docker run -t -i noteed/kafka-websocket bash
+
+Then within the container:
+
+    > # In the producer and consumer `.properties` files,
+    > # set zookeeper.connect=172.17.0.2:2181
+    > # and metadata.broker.list=172.17.0.3:9092
+    > mvn compile
+    > mvn package
+    > java -jar target/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar
+
+Run the static HTTP server:
+
+    > docker run -d -p 80:80 \
+        -v `pwd`/static:/usr/share/nginx/www \
+        -v `pwd`/sites-enabled:/etc/nginx/sites-enabled \
+        noteed/nginx
