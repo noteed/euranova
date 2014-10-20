@@ -44,9 +44,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Random;
 
 import backtype.storm.spout.SchemeAsMultiScheme;
+import storm.kafka.bolt.KafkaBolt;
 import storm.kafka.KafkaSpout;
 import storm.kafka.SpoutConfig;
 import storm.kafka.ZkHosts;
@@ -276,7 +278,8 @@ public class SimpleTopology {
 
         // We emit the best sums.
         for (Pair entry : counts) {
-          collector.emit(new Values(entry.model, entry.count, generation));
+          // collector.emit(new Values(entry.model, entry.count, generation));
+          collector.emit(new Values(entry.model));
         }
 
         while (t1 - t0 > TICK_SIZE) {
@@ -305,7 +308,8 @@ public class SimpleTopology {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("models", "count", "generation"));
+      // declarer.declare(new Fields("models", "count", "generation"));
+      declarer.declare(new Fields("message")); // Matches KafkaBolt's expectation.
     }
   }
 
@@ -327,9 +331,19 @@ public class SimpleTopology {
       .fieldsGrouping("models", new Fields("model"));
     builder.setBolt("best", new BestModelBolt(), 1)
       .globalGrouping("rolling");
+    builder.setBolt("to_kafka", new KafkaBolt(), 1)
+      .globalGrouping("best");
 
     Config conf = new Config();
     conf.setDebug(true);
+
+    // Configuration for the KafkaBolt.
+    Properties props = new Properties();
+    props.put("metadata.broker.list", "172.17.0.3:9092");
+    props.put("request.required.acks", "1");
+    props.put("serializer.class", "kafka.serializer.StringEncoder");
+    conf.put(KafkaBolt.KAFKA_BROKER_PROPERTIES, props);
+    conf.put(KafkaBolt.TOPIC, "topic");
 
     if (args != null && args.length > 0) {
       conf.setNumWorkers(3);
