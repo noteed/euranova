@@ -142,7 +142,7 @@ Then within the container:
     > $KAFKA_HOME/bin/kafka-topics.sh --create --topic topic \
         --partitions 4 --zookeeper $ZK_PORT_2181_TCP_ADDR --replication-factor 1
     > $KAFKA_HOME/bin/kafka-topics.sh --describe --topic topic --zookeeper $ZK_PORT_2181_TCP_ADDR
-    > $KAFKA_HOME/bin/kafka-console-producer.sh --topic=topic --broker-list=172.17.0.3:9292
+    > $KAFKA_HOME/bin/kafka-console-producer.sh --topic=topic --broker-list=172.17.0.3:9092
 
 Or to consume the messages:
 
@@ -167,3 +167,20 @@ Run the static HTTP server:
         -v `pwd`/static:/usr/share/nginx/www \
         -v `pwd`/sites-enabled:/etc/nginx/sites-enabled \
         noteed/nginx
+
+## Development
+
+Adding `kafka` or `kafka-storm` as dependencies can be done by adding the
+following code to the `pom.xml` file:
+
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka_2.10</artifactId>
+      <version>0.8.1.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.storm</groupId>
+      <artifactId>storm-kafka</artifactId>
+      <version>0.9.2-incubating</version>
+    </dependency>

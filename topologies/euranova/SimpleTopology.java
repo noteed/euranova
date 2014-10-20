@@ -46,6 +46,12 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 
+import backtype.storm.spout.SchemeAsMultiScheme;
+import storm.kafka.KafkaSpout;
+import storm.kafka.SpoutConfig;
+import storm.kafka.ZkHosts;
+import storm.kafka.StringScheme;
+
 /**
  * This is a basic example of a Storm topology.
  */
@@ -304,7 +310,13 @@ public class SimpleTopology {
   }
 
   public static void main(String[] args) throws Exception {
+    SpoutConfig kafkaSpoutConf = new SpoutConfig(
+      new ZkHosts("172.17.0.2:2181"), "topic", "/kafka", "KafkaSpout");
+    kafkaSpoutConf.scheme = new SchemeAsMultiScheme(new StringScheme());
+
     TopologyBuilder builder = new TopologyBuilder();
+
+    builder.setSpout("from_kafka", new KafkaSpout(kafkaSpoutConf), 1);
 
     builder.setSpout("models", new TestModelSpout(), 10);
     builder.setBolt("exclamations", new ExclamationBolt(), 3)
