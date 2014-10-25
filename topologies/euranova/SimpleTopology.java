@@ -176,7 +176,7 @@ public class SimpleTopology {
 
   public static class RollingModelCountBolt extends BaseBasicBolt {
     Map<String, Integer> counts = new HashMap<String, Integer>();
-    static final int WINDOW_SIZE = 5; // In ticks
+    static final int WINDOW_SIZE = 60; // In ticks
     Map<String, Deque<Integer>> ticks = new HashMap<String, Deque<Integer>>();
 
     @Override
@@ -271,7 +271,10 @@ public class SimpleTopology {
 
         // We emit the best sums.
         for (Pair entry : counts) {
-          list.add(entry.model);
+          JSONArray pair = new JSONArray();
+          pair.add(entry.model);
+          pair.add(entry.count);
+          list.add(pair);
         }
         collector.emit(new Values(list.toJSONString()));
       } else {
@@ -350,7 +353,7 @@ public class SimpleTopology {
 
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("test", conf, builder.createTopology());
-      Utils.sleep(60000);
+      Utils.sleep(5 * 60 * 1000);
       cluster.killTopology("test");
       cluster.shutdown();
     }

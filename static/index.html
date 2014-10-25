@@ -42,8 +42,8 @@
     document.getElementById("models").innerHTML = '';
     var msg = JSON.parse(ev.data);
     var models = JSON.parse(msg.message);
-    models.forEach(function(model, index) {
-      var text = (index + 1) + ". " + model;
+    models.forEach(function(items, index) {
+      var text = (index + 1) + ". " + items[0] + " (" + items[1] + ")";
       var node = document.createTextNode(text);
       var li = document.createElement("li");
       li.appendChild(node);
