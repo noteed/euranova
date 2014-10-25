@@ -287,6 +287,7 @@ public class SimpleTopology {
             break;
           }
         }
+        // TODO Remove models with a zero count.
         counts.add(new Pair(model, count));
         Collections.sort(counts, new PairComparator());
         if (counts.size() > N_BEST) {
@@ -349,7 +350,7 @@ public class SimpleTopology {
 
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("test", conf, builder.createTopology());
-      Utils.sleep(10000);
+      Utils.sleep(60000);
       cluster.killTopology("test");
       cluster.shutdown();
     }
