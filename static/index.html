@@ -1,10 +1,30 @@
 <!DOCTYPE html>
-<meta charset="utf-8"/>
-<title>Storm Case</title>
-<pre>Models:</pre>
-<pre id="models" />
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Storm Case</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <link href="/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Le fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="/ico/apple-touch-icon-57-precomposed.png">
+                                   <link rel="shortcut icon" href="/ico/favicon.png">
+
 <script language="javascript" type="text/javascript">
-  var uri = 'ws://172.17.06:7080/v2/broker/?topics=best_models';
+  var uri = 'ws://172.17.07:7080/v2/broker/?topics=best_models';
 
   var ws = new WebSocket(uri);
 
@@ -19,18 +39,49 @@
   ws.onmessage = function(ev) {
     console.log('message', ev);
 
-    var f = document.getElementById("models").contentDocument;
-    var text = "";
+    document.getElementById("models").innerHTML = '';
     var msg = JSON.parse(ev.data);
-
-    text = msg.message + "\n";
-
-    if (text.length) {
-      document.getElementById("models").innerHTML = text;
-    }
+    var models = JSON.parse(msg.message);
+    models.forEach(function(model, index) {
+      var text = (index + 1) + ". " + model;
+      var node = document.createTextNode(text);
+      var li = document.createElement("li");
+      li.appendChild(node);
+      document.getElementById("models").appendChild(li);
+    });
   }
 
   ws.onerror = function(ev) {
     console.log('error', ev);
   }
 </script>
+  </head>
+
+  <body>
+
+  <div class="container">
+    <br>
+    <h1>Storm Case</h1>
+    <br>
+    <h3>Top-selling models</h1>
+    <br>
+    <ul id="models" />
+  </div>
+
+
+
+    <!-- Footer
+    ================================================== -->
+    <footer class="footer">
+      <div class="container">
+        <hr class="soften">
+        <p>Using the <a href="https://kristopolous.github.io/BOOTSTRA.386/">BOOTSTRA.386</a> theme.</p>
+      </div>
+    </footer>
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="/js/bootstrap.js"></script>
+  </body>
+</html>

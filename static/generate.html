@@ -1,8 +1,30 @@
 <!DOCTYPE html>
-<meta charset="utf-8"/>
-<title>Storm Case</title>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Storm Case</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="/css/bootstrap.css" rel="stylesheet">
+    <link href="/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Le fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="/ico/apple-touch-icon-57-precomposed.png">
+                                   <link rel="shortcut icon" href="/ico/favicon.png">
+
 <script language="javascript" type="text/javascript">
-  var uri = 'ws://172.17.06:7080/v2/broker/';
+  var uri = 'ws://172.17.07:7080/v2/broker/';
 
   var ws = new WebSocket(uri);
 
@@ -22,15 +44,52 @@
     console.log('error', ev);
   }
 
-  setInterval(function() {
-    var items = {
-      alpha: 5,
-      beta: 7
-    }
+  sendTicket = function(model) {
+    var items = {};
+    items[model] = 1;
     var message = {
       topic: 'tickets',
       message: (JSON.stringify(items))
     }
     ws.send(JSON.stringify(message));
-  }, 1000)
+  }
+
+  /* setInterval(sendTicket, 1000); */
 </script>
+  </head>
+
+  <body>
+
+  <div class="container">
+    <br>
+    <h1>Storm Case</h1>
+    <br>
+    <h3>Sell !</h1>
+    <br>
+    <p>
+      <input id="sendTicketAlpha" type="button" value="< Alpha >" onclick="sendTicket('Alpha')"
+        class="btn btn-primary btn-large" />
+      <input id="sendTicketBeta" type="button" value="< Beta >" onclick="sendTicket('Beta')"
+        class="btn btn-primary btn-large" />
+      <input id="sendTicketGamma" type="button" value="< Gamma >" onclick="sendTicket('Gamma')"
+        class="btn btn-primary btn-large" />
+    </p>
+  </div>
+
+
+
+    <!-- Footer
+    ================================================== -->
+    <footer class="footer">
+      <div class="container">
+        <hr class="soften">
+        <p>Using the <a href="https://kristopolous.github.io/BOOTSTRA.386/">BOOTSTRA.386</a> theme.</p>
+      </div>
+    </footer>
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="/js/bootstrap.js"></script>
+  </body>
+</html>
