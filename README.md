@@ -139,14 +139,16 @@ The kafka image can also be used to generate messages:
 
 Then within the container:
 
-    > $KAFKA_HOME/bin/kafka-topics.sh --create --topic topic \
+    > $KAFKA_HOME/bin/kafka-topics.sh --create --topic tickets \
         --partitions 4 --zookeeper $ZK_PORT_2181_TCP_ADDR --replication-factor 1
-    > $KAFKA_HOME/bin/kafka-topics.sh --describe --topic topic --zookeeper $ZK_PORT_2181_TCP_ADDR
-    > $KAFKA_HOME/bin/kafka-console-producer.sh --topic=topic --broker-list=172.17.0.3:9092
+    > $KAFKA_HOME/bin/kafka-topics.sh --create --topic best_models \
+        --partitions 4 --zookeeper $ZK_PORT_2181_TCP_ADDR --replication-factor 1
+    > $KAFKA_HOME/bin/kafka-topics.sh --describe --topic tickets --zookeeper $ZK_PORT_2181_TCP_ADDR
+    > $KAFKA_HOME/bin/kafka-console-producer.sh --topic=tickets --broker-list=172.17.0.3:9092
 
 Or to consume the messages:
 
-    > $KAFKA_HOME/bin/kafka-console-consumer.sh --topic=topic --zookeeper=$ZK_PORT_2181_TCP_ADDR
+    > $KAFKA_HOME/bin/kafka-console-consumer.sh --topic=tickets --zookeeper=$ZK_PORT_2181_TCP_ADDR
 
 Run the websocket server:
 
@@ -154,6 +156,7 @@ Run the websocket server:
 
 Then within the container:
 
+    > cd kafka-websocket
     > # In the producer and consumer `.properties` files,
     > # set zookeeper.connect=172.17.0.2:2181
     > # and metadata.broker.list=172.17.0.3:9092

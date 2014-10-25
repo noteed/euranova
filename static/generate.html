@@ -23,9 +23,13 @@
   }
 
   setInterval(function() {
+    var items = {
+      alpha: 5,
+      beta: 7
+    }
     var message = {
-      topic: 'topic',
-      message: 'Some message at ' + new Date()
+      topic: 'tickets',
+      message: (JSON.stringify(items))
     }
     ws.send(JSON.stringify(message));
   }, 1000)

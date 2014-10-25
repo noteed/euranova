@@ -47,6 +47,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.ParseException;
+import org.json.simple.parser.JSONParser;
+
 import backtype.storm.spout.SchemeAsMultiScheme;
 import storm.kafka.bolt.KafkaBolt;
 import storm.kafka.KafkaSpout;
@@ -96,7 +101,11 @@ public class SimpleTopology {
     }
   }
 
-  public static class ExclamationBolt extends BaseRichBolt {
+  /*
+   * Combine this bolt with a KafkaSpout to extract a model and a count
+   * (similar to TestModelSpout).
+   */
+  public static class ExtractModelCountBolt extends BaseRichBolt {
     OutputCollector _collector;
 
     @Override
@@ -106,14 +115,26 @@ public class SimpleTopology {
 
     @Override
     public void execute(Tuple tuple) {
-      final String marks = new String(new char[tuple.getInteger(1)]).replace("\0", "!");
-      _collector.emit(tuple, new Values(tuple.getString(0) + marks));
+      final String s = tuple.getString(0);
+      JSONParser parser = new JSONParser();
+      try {
+        JSONObject items = (JSONObject)parser.parse(s);
+        Iterator<String> models = items.keySet().iterator();
+        while (models.hasNext()) {
+          String model = (String)models.next();
+          int count = (int)(long)(Long)items.get(model);
+          _collector.emit(tuple, new Values(model, count));
+        }
+      } catch(ParseException pe) {
+        // TODO Other exceptions are possible.
+        // TODO Log.
+      }
       _collector.ack(tuple);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("model"));
+      declarer.declare(new Fields("model", "count"));
     }
   }
 
@@ -315,16 +336,14 @@ public class SimpleTopology {
 
   public static void main(String[] args) throws Exception {
     SpoutConfig kafkaSpoutConf = new SpoutConfig(
-      new ZkHosts("172.17.0.2:2181"), "topic", "/kafka", "KafkaSpout");
+      new ZkHosts("172.17.0.2:2181"), "tickets", "/kafka", "KafkaSpout");
     kafkaSpoutConf.scheme = new SchemeAsMultiScheme(new StringScheme());
 
     TopologyBuilder builder = new TopologyBuilder();
 
     builder.setSpout("from_kafka", new KafkaSpout(kafkaSpoutConf), 1);
-
-    builder.setSpout("models", new TestModelSpout(), 10);
-    builder.setBolt("exclamations", new ExclamationBolt(), 3)
-      .fieldsGrouping("models", new Fields("model"));
+    builder.setBolt("models", new ExtractModelCountBolt(), 2)
+      .shuffleGrouping("from_kafka");
     builder.setBolt("sums", new ModelCountBolt(), 3)
       .fieldsGrouping("models", new Fields("model"));
     builder.setBolt("rolling", new RollingModelCountBolt(), 3)
@@ -343,7 +362,7 @@ public class SimpleTopology {
     props.put("request.required.acks", "1");
     props.put("serializer.class", "kafka.serializer.StringEncoder");
     conf.put(KafkaBolt.KAFKA_BROKER_PROPERTIES, props);
-    conf.put(KafkaBolt.TOPIC, "topic");
+    conf.put(KafkaBolt.TOPIC, "best_models");
 
     if (args != null && args.length > 0) {
       conf.setNumWorkers(3);
