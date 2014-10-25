@@ -283,8 +283,6 @@ public class SimpleTopology {
     long t0 = 0; // Beginning of current tick (frame ?)
     static final long TICK_SIZE = 1000; // In milliseconds
     static final long N_BEST = 3; // How many best models should be reported.
-    static int generation = 0; // Simple way to group messages together.
-                               // TODO See to use a single (bigger) message.
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
@@ -295,13 +293,13 @@ public class SimpleTopology {
       if (t1 - t0 > TICK_SIZE) {
         // Transition to a new tick.
 
-        generation += 1;
+        JSONArray list = new JSONArray();
 
         // We emit the best sums.
         for (Pair entry : counts) {
-          // collector.emit(new Values(entry.model, entry.count, generation));
-          collector.emit(new Values(entry.model));
+          list.add(entry.model);
         }
+        collector.emit(new Values(list.toJSONString()));
 
         while (t1 - t0 > TICK_SIZE) {
           t0 += TICK_SIZE;
@@ -329,7 +327,6 @@ public class SimpleTopology {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      // declarer.declare(new Fields("models", "count", "generation"));
       declarer.declare(new Fields("message")); // Matches KafkaBolt's expectation.
     }
   }
