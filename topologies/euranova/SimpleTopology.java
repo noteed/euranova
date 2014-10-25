@@ -18,6 +18,7 @@
 package euranova;
 
 import backtype.storm.Config;
+import backtype.storm.Constants;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
 import backtype.storm.spout.SpoutOutputCollector;
@@ -140,122 +141,101 @@ public class SimpleTopology {
 
   public static class ModelCountBolt extends BaseBasicBolt {
     Map<String, Integer> counts = new HashMap<String, Integer>();
-    long t0 = 0; // Beginning of current tick (frame ?)
-    static final long TICK_SIZE = 1000; // In milliseconds
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
-      if (t0 == 0)
-        t0 = System.currentTimeMillis();
-      long t1 = System.currentTimeMillis();
-
-      if (t1 - t0 > TICK_SIZE) {
-        // Transition to a new tick.
-
-        // We emit the current sums. This assumes that this execute() method
-        // is called frequently to emit the sums in a timely manner.
-        // To ensure this is the case, the spout can emit additional messages
-        // or a thread could be added to this bolt.
-        // Would it be better for each sum to have its own t0 (i.e. its own
-        // tick window), instead of emitting all the sums at once ?
+      if (isTickTuple(tuple)) {
+        // We emit the current sums.
         for (Map.Entry<String, Integer> entry : counts.entrySet()) {
           collector.emit(new Values(entry.getKey(), entry.getValue()));
         }
 
         // TODO Better to reset existing values ?
         counts = new HashMap<String, Integer>();
-
-        // Advance to the beginning of the new tick. If execute() is called
-        // frequently as suggested above, this is a single iteration.
-        while (t1 - t0 > TICK_SIZE) {
-          t0 += TICK_SIZE;
-        }
+      } else {
+        String model = tuple.getString(0);
+        Integer count = counts.get(model);
+        if (count == null)
+          count = 0;
+        count += tuple.getInteger(1);
+        counts.put(model, count);
       }
-
-      String model = tuple.getString(0);
-      Integer count = counts.get(model);
-      if (count == null)
-        count = 0;
-      count += tuple.getInteger(1);
-      counts.put(model, count);
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
       declarer.declare(new Fields("models", "count"));
+    }
+
+    // TODO This method in a common super class.
+    private static boolean isTickTuple(Tuple tuple) {
+      return tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID)
+        && tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID);
     }
   }
 
   public static class RollingModelCountBolt extends BaseBasicBolt {
     Map<String, Integer> counts = new HashMap<String, Integer>();
-    long t0 = 0; // Beginning of current tick (frame ?)
-    static final long TICK_SIZE = 1000; // In milliseconds
     static final int WINDOW_SIZE = 5; // In ticks
     Map<String, Deque<Integer>> ticks = new HashMap<String, Deque<Integer>>();
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
-      if (t0 == 0)
-        t0 = System.currentTimeMillis();
-      long t1 = System.currentTimeMillis();
-
-      String model = tuple.getString(0);
-      Integer tickCount = tuple.getInteger(1);
-
-      Integer count = counts.get(model);
-      Deque<Integer> fifo = ticks.get(model);
-
-      if (count == null) {
-        count = 0;
-        counts.put(model, 0);
-      }
-
-      if (fifo == null) {
-        fifo = new LinkedList<Integer>();
-        for (int i=0 ; i<WINDOW_SIZE ; i++) {
-          fifo.addFirst(0);
-        }
-        ticks.put(model, fifo);
-      }
-
-      if (t1 - t0 > TICK_SIZE) {
+      if (isTickTuple(tuple)) {
         // Transition to a new tick.
 
-        // We emit the current sums. This assumes that this execute() method
-        // is called frequently to emit the sums in a timely manner.
-        // To ensure this is the case, the spout can emit additional messages
-        // or a thread could be added to this bolt.
-        // Would it be better for each sum to have its own t0 (i.e. its own
-        // tick window), instead of emitting all the sums at once ?
+        // We emit the current sums.
         for (Map.Entry<String, Integer> entry : counts.entrySet()) {
           collector.emit(new Values(entry.getKey(), entry.getValue()));
         }
 
-        // Advance to the beginning of the new tick. If execute() is called
-        // frequently as suggested above, this is a single iteration.
-        while (t1 - t0 > TICK_SIZE) {
-          t0 += TICK_SIZE;
-          for (Map.Entry<String, Deque<Integer>> entry : ticks.entrySet()) {
-            entry.getValue().addLast(0);
-            Integer f = entry.getValue().removeFirst();
-            Integer c = counts.get(entry.getKey());
-            c -= f;
-            counts.put(entry.getKey(), c);
-          }
-        }
-      }
+        for (Map.Entry<String, Deque<Integer>> entry : ticks.entrySet()) {
+          entry.getValue().addLast(0);
+          Integer f = entry.getValue().removeFirst();
+          Integer c = counts.get(entry.getKey());
+          c -= f;
+          counts.put(entry.getKey(), c);
 
-      Integer last = fifo.removeLast();
-      last += tickCount;
-      fifo.addLast(last);
-      count = counts.get(model);
-      count += tickCount;
-      counts.put(model, count);
+        // TODO Remove models whose count has reached zero.
+        }
+      } else {
+        String model = tuple.getString(0);
+        Integer tickCount = tuple.getInteger(1);
+
+        Integer count = counts.get(model);
+        Deque<Integer> fifo = ticks.get(model);
+
+        if (count == null) {
+          count = 0;
+          counts.put(model, 0);
+        }
+
+        if (fifo == null) {
+          fifo = new LinkedList<Integer>();
+          for (int i=0 ; i<WINDOW_SIZE ; i++) {
+            fifo.addFirst(0);
+          }
+          ticks.put(model, fifo);
+        }
+
+        Integer last = fifo.removeLast();
+        last += tickCount;
+        fifo.addLast(last);
+        count = counts.get(model);
+        count += tickCount;
+        counts.put(model, count);
+      }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
       declarer.declare(new Fields("models", "count"));
+    }
+
+    // TODO This method in a common super class.
+    private static boolean isTickTuple(Tuple tuple) {
+      return tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID)
+        && tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID);
     }
   }
 
@@ -280,17 +260,11 @@ public class SimpleTopology {
 
   public static class BestModelBolt extends BaseBasicBolt {
     LinkedList<Pair> counts = new LinkedList<Pair>();
-    long t0 = 0; // Beginning of current tick (frame ?)
-    static final long TICK_SIZE = 1000; // In milliseconds
     static final long N_BEST = 3; // How many best models should be reported.
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
-      if (t0 == 0)
-        t0 = System.currentTimeMillis();
-      long t1 = System.currentTimeMillis();
-
-      if (t1 - t0 > TICK_SIZE) {
+      if (isTickTuple(tuple)) {
         // Transition to a new tick.
 
         JSONArray list = new JSONArray();
@@ -300,34 +274,36 @@ public class SimpleTopology {
           list.add(entry.model);
         }
         collector.emit(new Values(list.toJSONString()));
-
-        while (t1 - t0 > TICK_SIZE) {
-          t0 += TICK_SIZE;
+      } else {
+        // Remove existing model if any, then add the new one, sort everything,
+        // keep the n best ones.
+        String model = tuple.getString(0);
+        Integer count = tuple.getInteger(1);
+        Iterator<Pair> it = counts.iterator();
+        while (it.hasNext()) {
+          Pair entry = it.next();
+          if (entry.model == model) {
+            it.remove();
+            break;
+          }
         }
-      }
-
-      // Remove existing model if any, then add the new one, sort everything,
-      // keep the n best ones.
-      String model = tuple.getString(0);
-      Integer count = tuple.getInteger(1);
-      Iterator<Pair> it = counts.iterator();
-      while (it.hasNext()) {
-        Pair entry = it.next();
-        if (entry.model == model) {
-          it.remove();
-          break;
-        }
-      }
-      counts.add(new Pair(model, count));
-      if (counts.size() > N_BEST) {
+        counts.add(new Pair(model, count));
         Collections.sort(counts, new PairComparator());
-        counts.removeLast();
+        if (counts.size() > N_BEST) {
+          counts.removeLast();
+        }
       }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
       declarer.declare(new Fields("message")); // Matches KafkaBolt's expectation.
+    }
+
+    // TODO This method in a common super class.
+    private static boolean isTickTuple(Tuple tuple) {
+      return tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID)
+        && tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID);
     }
   }
 
@@ -342,10 +318,13 @@ public class SimpleTopology {
     builder.setBolt("models", new ExtractModelCountBolt(), 2)
       .shuffleGrouping("from_kafka");
     builder.setBolt("sums", new ModelCountBolt(), 3)
+      .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
       .fieldsGrouping("models", new Fields("model"));
     builder.setBolt("rolling", new RollingModelCountBolt(), 3)
+      .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
       .fieldsGrouping("models", new Fields("model"));
     builder.setBolt("best", new BestModelBolt(), 1)
+      .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
       .globalGrouping("rolling");
     builder.setBolt("to_kafka", new KafkaBolt(), 1)
       .globalGrouping("best");
