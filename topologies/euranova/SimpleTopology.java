@@ -346,11 +346,9 @@ public class SimpleTopology {
 
     if (args != null && args.length > 0) {
       conf.setNumWorkers(3);
-
       StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
     }
     else {
-
       LocalCluster cluster = new LocalCluster();
       cluster.submitTopology("test", conf, builder.createTopology());
       Utils.sleep(5 * 60 * 1000);

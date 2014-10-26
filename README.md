@@ -119,14 +119,6 @@ To run the simple solution:
 
     > mvn exec:java -Dstorm.topology=euranova.SimpleTopology
 
-## Nginx
-
-    > docker run -d \
-        -p 80:80 \
-        -v `pwd`/static:/usr/share/nginx/www \
-        -v `pwd`/sites-enabled:/etc/nginx/sites-enabled \
-        noteed/nginx
-
 ## Running
 
 Run the `launch.sh` script:
@@ -150,18 +142,22 @@ Or to consume the messages:
 
     > $KAFKA_HOME/bin/kafka-console-consumer.sh --topic=tickets --zookeeper=$ZK_PORT_2181_TCP_ADDR
 
-Run the websocket server:
+Build the websocket server:
 
     > docker run -t -i noteed/kafka-websocket bash
 
 Then within the container:
 
     > cd kafka-websocket
+    > mvn compile
+    > mvn package
+    > # target/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar can be saved.
+
+Run the websocket server:
+
     > # In the producer and consumer `.properties` files,
     > # set zookeeper.connect=172.17.0.2:2181
     > # and metadata.broker.list=172.17.0.3:9092
-    > mvn compile
-    > mvn package
     > java -jar target/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar
 
 Run the static HTTP server:
@@ -187,3 +183,9 @@ following code to the `pom.xml` file:
       <artifactId>storm-kafka</artifactId>
       <version>0.9.2-incubating</version>
     </dependency>
+
+## TODOs
+
+- Use something like https://github.com/joewalnes/reconnecting-websocket.
+- Make the websocket-server Docker image based on the JRE only.
+- Add missing Bootstrap files.
