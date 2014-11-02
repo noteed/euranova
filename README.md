@@ -102,6 +102,8 @@ Run the image with:
         -v `pwd`/topologies/euranova:/home/storm/src/examples/storm-starter/src/jvm/euranova \
         noteed/storm-starter bash
 
+TODO Also make the (modified) pom.xml file available.
+
 This makes the local `topologies/euranova` directory available within the
 container's Storm examples.
 
@@ -118,6 +120,22 @@ To run the Exclamation example:
 To run the simple solution:
 
     > mvn exec:java -Dstorm.topology=euranova.SimpleTopology
+
+To save a `jar` that can be submitted to a cluster:
+
+    > mvn package
+    > # target/storm-starter-0.9.2-incubating-jar-with-dependencies.jar can be saved
+
+`images/storm` containes a binary release of Storm. In particular it provides
+the `storm` executable to submit a topology to a Storm cluster.
+
+To run the jar built above against a cluster (using the noteed/storm image):
+
+    > mkdir .storm
+    > echo 'nimbus.host: "172.17.0.4"' > .storm/storm.yaml
+    > ./release/bin/storm jar \
+        /source/storm-starter-0.9.2-incubating-jar-with-dependencies.jar \
+        euranova.SimpleTopology stormcase
 
 ## Running
 

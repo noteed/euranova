@@ -9,7 +9,7 @@ echo "  container: $ZOOKEEPER_ID"
 echo "  address: $ZOOKEEPER_IP"
 
 # TODO Remove hard-coded IP address.
-# TODO I think the --name is no longer needed.
+# TODO I think the --name and --link are no longer needed.
 KAFKA1_ID=$(docker run -d \
   --name kafka1 \
   --link zookeeper:zk \
@@ -44,6 +44,33 @@ docker run --rm --link zookeeper:zk -i -t wurstmeister/kafka:0.8.1.1-1 \
 docker run --rm --link zookeeper:zk -i -t wurstmeister/kafka:0.8.1.1-1 \
   /opt/kafka_2.8.0-0.8.1.1/bin/kafka-topics.sh --describe --topic best_models \
     --zookeeper $ZOOKEEPER_IP
+
+NIMBUS_ID=$(docker run -d \
+  --name nimbus \
+  --link zookeeper:zk \
+  wurstmeister/storm-nimbus:0.9.2)
+NIMBUS_IP=$(docker inspect $NIMBUS_ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+echo nimbus:
+echo "  container: $NIMBUS_ID"
+echo "  address: $NIMBUS_IP"
+
+SUPERVISOR_ID=$(docker run -d \
+  --link nimbus:nimbus \
+  --link zookeeper:zk \
+  wurstmeister/storm-supervisor:0.9.2)
+SUPERVISOR_IP=$(docker inspect $SUPERVISOR_ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+echo supervisor:
+echo "  container: $SUPERVISOR_ID"
+echo "  address: $SUPERVISOR_IP"
+
+UI_ID=$(docker run -d \
+  --link nimbus:nimbus \
+  --link zookeeper:zk \
+  wurstmeister/storm-ui:0.9.2)
+UI_IP=$(docker inspect $UI_ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
+echo ui:
+echo "  container: $UI_ID"
+echo "  address: $UI_IP"
 
 WEBSOCKET_ID=$(docker run -d \
   -p 7080:7080 \
