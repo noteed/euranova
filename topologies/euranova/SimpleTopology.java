@@ -164,7 +164,7 @@ public class SimpleTopology {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("models", "count"));
+      declarer.declare(new Fields("model", "count"));
     }
 
     // TODO This method in a common super class.
@@ -326,11 +326,11 @@ public class SimpleTopology {
       .fieldsGrouping("models", new Fields("model"));
     builder.setBolt("rolling", new RollingModelCountBolt(), 3)
       .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
-      .fieldsGrouping("models", new Fields("model"));
-    builder.setBolt("best", new BestModelBolt(), 1)
+      .fieldsGrouping("sums", new Fields("model"));
+    builder.setBolt("best", new BestModelBolt())
       .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
       .globalGrouping("rolling");
-    builder.setBolt("to_kafka", new KafkaBolt(), 1)
+    builder.setBolt("to_kafka", new KafkaBolt())
       .globalGrouping("best");
 
     Config conf = new Config();
