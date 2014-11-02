@@ -285,7 +285,7 @@ public class SimpleTopology {
         Iterator<Pair> it = counts.iterator();
         while (it.hasNext()) {
           Pair entry = it.next();
-          if (entry.model == model) {
+          if (entry.model.equals(model)) {
             it.remove();
             break;
           }
