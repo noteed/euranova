@@ -186,7 +186,7 @@ public class SimpleTopology {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("models", "count"));
+      declarer.declare(new Fields("model", "count"));
     }
 
     // TODO This method in a common super class.
@@ -222,18 +222,7 @@ public class SimpleTopology {
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
       if (isTickTuple(tuple)) {
-        // Transition to a new tick.
-
-        JSONArray list = new JSONArray();
-
-        // We emit the best sums.
-        for (Pair entry : counts) {
-          JSONArray pair = new JSONArray();
-          pair.add(entry.model);
-          pair.add(entry.count);
-          list.add(pair);
-        }
-        collector.emit(new Values(list.toJSONString()));
+        tickTuple(collector);
       } else {
         // Remove existing model if any, then add the new one, sort everything,
         // keep the n best ones.
@@ -256,6 +245,21 @@ public class SimpleTopology {
       }
     }
 
+    protected void tickTuple(BasicOutputCollector collector) {
+        // Transition to a new tick.
+
+        JSONArray list = new JSONArray();
+
+        // We emit the best sums.
+        for (Pair entry : counts) {
+          JSONArray pair = new JSONArray();
+          pair.add(entry.model);
+          pair.add(entry.count);
+          list.add(pair);
+        }
+        collector.emit(new Values(list.toJSONString()));
+    }
+
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
       declarer.declare(new Fields("message")); // Matches KafkaBolt's expectation.
@@ -265,6 +269,24 @@ public class SimpleTopology {
     private static boolean isTickTuple(Tuple tuple) {
       return tuple.getSourceComponent().equals(Constants.SYSTEM_COMPONENT_ID)
         && tuple.getSourceStreamId().equals(Constants.SYSTEM_TICK_STREAM_ID);
+    }
+  }
+
+  public static class BestModelIntermediaryBolt extends BestModelBolt {
+
+    @Override
+    protected void tickTuple(BasicOutputCollector collector) {
+        // Transition to a new tick.
+
+        // We emit the best sums.
+        for (Pair entry : counts) {
+          collector.emit(new Values(entry.model, entry.count));
+        }
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+      declarer.declare(new Fields("model", "count"));
     }
   }
 
@@ -284,9 +306,12 @@ public class SimpleTopology {
     builder.setBolt("rolling", new RollingModelCountBolt(), 3)
       .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
       .fieldsGrouping("sums", new Fields("model"));
+    builder.setBolt("best_intermediate", new BestModelIntermediaryBolt(), 2)
+      .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
+      .fieldsGrouping("rolling", new Fields("model"));
     builder.setBolt("best", new BestModelBolt())
       .addConfiguration(Config.TOPOLOGY_TICK_TUPLE_FREQ_SECS, 1)
-      .globalGrouping("rolling");
+      .globalGrouping("best_intermediate");
     builder.setBolt("to_kafka", new KafkaBolt())
       .globalGrouping("best");
 
