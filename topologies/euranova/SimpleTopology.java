@@ -21,7 +21,7 @@ import backtype.storm.Config;
 import backtype.storm.Constants;
 import backtype.storm.LocalCluster;
 import backtype.storm.StormSubmitter;
-import backtype.storm.spout.SpoutOutputCollector;
+import backtype.storm.spout.SchemeAsMultiScheme;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.BasicOutputCollector;
@@ -29,82 +29,39 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.topology.base.BaseRichBolt;
-import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-import java.lang.System;
-
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
-import org.json.simple.parser.ParseException;
-import org.json.simple.parser.JSONParser;
-
-import backtype.storm.spout.SchemeAsMultiScheme;
 import storm.kafka.bolt.KafkaBolt;
 import storm.kafka.KafkaSpout;
 import storm.kafka.SpoutConfig;
 import storm.kafka.ZkHosts;
 import storm.kafka.StringScheme;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Properties;
+
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.ParseException;
+import org.json.simple.parser.JSONParser;
+
 /**
  * This is a basic example of a Storm topology.
  */
 public class SimpleTopology {
 
-  public static class TestModelSpout extends BaseRichSpout {
-    SpoutOutputCollector _collector;
-
-    public TestModelSpout() {
-      this(true);
-    }
-
-    public TestModelSpout(boolean isDistributed) {
-    }
-
-    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
-      _collector = collector;
-    }
-
-    public void close() {
-    }
-
-    public void nextTuple() {
-      Utils.sleep(100);
-      final String[] models = new String[] {"nathan", "mike", "jackson", "golda", "bertels"};
-      final Random rand = new Random();
-      final String model = models[rand.nextInt(models.length)];
-      final int count = rand.nextInt(10);
-      _collector.emit(new Values(model, count));
-    }
-
-    public void ack(Object msgId) {
-    }
-
-    public void fail(Object msgId) {
-    }
-
-    public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields("model", "count"));
-    }
-  }
-
   /*
-   * Combine this bolt with a KafkaSpout to extract a model and a count
-   * (similar to TestModelSpout).
+   * Combine this bolt with a KafkaSpout to expose a stream of model and count
+   * pair.
    */
   public static class ExtractModelCountBolt extends BaseRichBolt {
     OutputCollector _collector;
