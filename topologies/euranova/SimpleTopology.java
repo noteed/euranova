@@ -236,7 +236,6 @@ public class SimpleTopology {
             break;
           }
         }
-        // TODO Remove models with a zero count.
         counts.add(new Pair(model, count));
         Collections.sort(counts, new PairComparator());
         if (counts.size() > N_BEST) {
@@ -250,12 +249,14 @@ public class SimpleTopology {
 
         JSONArray list = new JSONArray();
 
-        // We emit the best sums.
+        // We emit the best non-zero sums.
         for (Pair entry : counts) {
-          JSONArray pair = new JSONArray();
-          pair.add(entry.model);
-          pair.add(entry.count);
-          list.add(pair);
+          if (entry.count > 0) {
+            JSONArray pair = new JSONArray();
+            pair.add(entry.model);
+            pair.add(entry.count);
+            list.add(pair);
+          }
         }
         collector.emit(new Values(list.toJSONString()));
     }
