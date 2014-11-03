@@ -3,12 +3,14 @@ FROM ubuntu:14.04
 RUN apt-get update
 RUN apt-get install -q -y git
 RUN apt-get install -q -y openjdk-7-jre-headless
-RUN apt-get install -q -y python2.7
+RUN apt-get -q -y -f install --no-install-recommends openjdk-7-jdk
+RUN update-alternatives --config java
+RUN apt-get install -q -y maven
 RUN apt-get install -q -y unzip
 RUN apt-get install -q -y vim
 RUN apt-get install -q -y wget
 
-RUN ln -s /usr/bin/python2.7 /usr/bin/python
+ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
 
 RUN groupadd storm ; \
   useradd --gid storm --home-dir /home/storm --create-home --shell /bin/bash storm
@@ -16,9 +18,3 @@ RUN groupadd storm ; \
 USER storm
 ENV HOME /home/storm
 WORKDIR /home/storm
-RUN wget -q -O - \
-  http://apache.cu.be/incubator/storm/apache-storm-0.9.2-incubating/apache-storm-0.9.2-incubating.tar.gz \
-  | tar -xzf -
-RUN mv apache-storm-0.9.2-incubating release
-
-ADD submit.sh /submit.sh

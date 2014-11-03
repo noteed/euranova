@@ -143,17 +143,27 @@ Run the `launch.sh` script:
 
     > ./launch.sh
 
+This will spawn a few Docker containers:
+
+- a ZooKeeper container, used for Kafka and for Storm,
+- a Kafka container (the script also creates two topics),
+- a Storm Nimbus container,
+- a Storm supervisor container,
+- a Storm UI container, accessible on <container-ip>:8080,
+- a Webscocket server,
+- and a Nginx server, accessible on localhost.
+
+To run the Storm topology, either use `mvn` as shown above, or to make use of
+the small Storm cluster, use:
+
+    > docker run -v `pwd`:/source noteed/storm /submit.sh
+
 The kafka image can also be used to generate messages:
 
     > docker run --rm --link zookeeper:zk -i -t wurstmeister/kafka:0.8.1.1-1 bash
 
 Then within the container:
 
-    > $KAFKA_HOME/bin/kafka-topics.sh --create --topic tickets \
-        --partitions 4 --zookeeper $ZK_PORT_2181_TCP_ADDR --replication-factor 1
-    > $KAFKA_HOME/bin/kafka-topics.sh --create --topic best_models \
-        --partitions 4 --zookeeper $ZK_PORT_2181_TCP_ADDR --replication-factor 1
-    > $KAFKA_HOME/bin/kafka-topics.sh --describe --topic tickets --zookeeper $ZK_PORT_2181_TCP_ADDR
     > $KAFKA_HOME/bin/kafka-console-producer.sh --topic=tickets --broker-list=172.17.0.3:9092
 
 Or to consume the messages:
