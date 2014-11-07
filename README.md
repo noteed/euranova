@@ -102,8 +102,6 @@ Run the image with:
         -v `pwd`/topologies/euranova:/home/storm/src/examples/storm-starter/src/jvm/euranova \
         noteed/storm-starter bash
 
-TODO Also make the (modified) pom.xml file available.
-
 This makes the local `topologies/euranova` directory available within the
 container's Storm examples.
 
@@ -137,26 +135,37 @@ To run the jar built above against a cluster (using the noteed/storm image):
         /source/storm-starter-0.9.2-incubating-jar-with-dependencies.jar \
         euranova.SimpleTopology stormcase
 
+Note: the above IP address is the Nimbus container address.
+
 ## Running
 
-Run the `launch.sh` script:
+Running the Storm case is done in two steps. The first step launch a set of
+containers to run Storm and Kafka. The second stop submits the Storm case
+topology to Storm.
+
+The first step is done by the `launch.sh` script:
 
     > ./launch.sh
 
 This will spawn a few Docker containers:
 
 - a ZooKeeper container, used for Kafka and for Storm,
-- a Kafka container (the script also creates two topics),
-- a Storm Nimbus container,
+- a Kafka container (the script also creates the two topics used by the Storm
+  case),
+- a Storm Nimbus container (its IP address will be used in the second step),
 - a Storm supervisor container,
 - a Storm UI container, accessible on <container-ip>:8080,
 - a Webscocket server,
-- and a Nginx server, accessible on localhost.
+- and a Nginx server, accessible directly from the host on port 80.
 
-To run the Storm topology, either use `mvn` as shown above, or to make use of
-the small Storm cluster, use:
+While the containers are spawned, the script outputs the container IDs and
+associated IP addresses.
 
-    > docker run -v `pwd`:/source noteed/storm /submit.sh
+The second step is done by:
+
+    > docker run -v `pwd`:/source noteed/storm /submit.sh 172.17.0.4
+
+Note: `172.17.0.4` is an example Nimbus address, as displayed by `launch.sh`.
 
 The kafka image can also be used to generate messages:
 
@@ -194,23 +203,6 @@ Run the static HTTP server:
         -v `pwd`/static:/usr/share/nginx/www \
         -v `pwd`/sites-enabled:/etc/nginx/sites-enabled \
         noteed/nginx
-
-## Development
-
-Adding `kafka` or `kafka-storm` as dependencies can be done by adding the
-following code to the `pom.xml` file:
-
-    <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka_2.10</artifactId>
-      <version>0.8.1.1</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.storm</groupId>
-      <artifactId>storm-kafka</artifactId>
-      <version>0.9.2-incubating</version>
-    </dependency>
 
 ## TODOs
 

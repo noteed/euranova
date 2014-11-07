@@ -16,7 +16,7 @@ all: .image_storm_starter_touched .image_kafka_websocket_touched .image_websocke
 	docker build -t noteed/maven images/maven
 	touch $@
 
-.image_storm_touched: images/storm/Dockerfile
+.image_storm_touched: images/storm/Dockerfile images/storm/submit.sh
 	docker build -t noteed/storm images/storm
 	touch $@
 
@@ -33,10 +33,7 @@ topologies/target/stormcase-0.1.0-jar-with-dependencies.jar:
           -v `pwd`/topologies:/home/storm/topologies \
           noteed/maven sh -c 'cd topologies ; mvn package'
 
-.PHONY: clean submit
-
-submit:
-	docker run -v `pwd`:/source noteed/storm /submit.sh
+.PHONY: clean
 
 clean:
 	rm -rf topologies/target
