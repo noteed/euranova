@@ -8,7 +8,10 @@ all: .image_storm_starter_touched .image_kafka_websocket_touched .image_websocke
 	docker build -t noteed/kafka-websocket images/kafka-websocket
 	touch $@
 
-.image_websocket_server_touched: images/websocket-server/Dockerfile images/websocket-server/run.sh
+images/websocket-server/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar: .image_kafka_websocket_touched
+	docker run -v `pwd`/images/websocket-server:/source noteed/kafka-websocket cp /home/storm/kafka-websocket/target/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar /source/
+
+.image_websocket_server_touched: images/websocket-server/Dockerfile images/websocket-server/run.sh images/websocket-server/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar
 	docker build -t noteed/websocket-server images/websocket-server
 	touch $@
 

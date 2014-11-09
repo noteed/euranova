@@ -16,6 +16,8 @@ RUN groupadd storm ; \
   useradd --gid storm --home-dir /home/storm --create-home --shell /bin/bash storm
 
 RUN su storm -c 'cd ; git clone https://github.com/b/kafka-websocket.git'
+RUN su storm -c 'cd ; cd kafka-websocket ; mvn compile'
+RUN su storm -c 'cd ; cd kafka-websocket ; mvn package'
 
 USER storm
 ENV HOME /home/storm

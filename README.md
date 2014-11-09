@@ -91,6 +91,10 @@ thing as the case...
 
 ## Docker images
 
+`noteed/kafka-websocket` is simply used to build the WebSocket server (as a
+jar) serving Kafka messages. The jar is needed to build
+`noteed/websocket-server`.
+
 ### Storm
 
 `images/storm-starter` is an in-progress Docker image to try
