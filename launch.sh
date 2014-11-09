@@ -8,12 +8,14 @@ echo zookeeper:
 echo "  container: $ZOOKEEPER_ID"
 echo "  address: $ZOOKEEPER_IP"
 
-# TODO Remove hard-coded IP address.
+NEXT=$( ((echo $ZOOKEEPER_IP | cut -d . -f 4) ; echo "last + 1") | bc | tail -n 1 )
+COMPUTED_KAFKA_IP=$(echo $ZOOKEEPER_IP | sed "s/[0-9]\+\$/$NEXT/")
+
 KAFKA1_ID=$(docker run -d \
   --link zookeeper:zk \
   -e 'KAFKA_BROKER_ID=1' \
   -e 'KAFKA_ADVERTISED_PORT=9092' \
-  -e 'KAFKA_ADVERTISED_HOST_NAME=172.17.0.3' \
+  -e "KAFKA_ADVERTISED_HOST_NAME=$COMPUTED_KAFKA_IP" \
   wurstmeister/kafka:0.8.1.1-1)
 KAFKA1_IP=$(docker inspect $KAFKA1_ID | grep IPAddress | awk '{ print $2 }' | tr -d ',"')
 echo kafka1:
