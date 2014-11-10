@@ -62,6 +62,7 @@ echo "  container: $SUPERVISOR_ID"
 echo "  address: $SUPERVISOR_IP"
 
 UI_ID=$(docker run -d \
+  -p 8080:8080 \
   --link nimbus:nimbus \
   --link zookeeper:zk \
   wurstmeister/storm-ui:0.9.2)
