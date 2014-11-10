@@ -106,22 +106,23 @@ Run the image with:
         -v `pwd`/topologies/euranova:/home/storm/src/examples/storm-starter/src/jvm/euranova \
         noteed/storm-starter bash
 
-This makes the local `topologies/euranova` directory available within the
-container's Storm examples.
+    > docker run -t -i \
+        -v `pwd`/topologies:/home/storm/topologies \
+        noteed/maven bash
+
+This makes the local `topologies` directory available within the home
+directory.
 
 Within the container, compile the examples (and the local solutions, if
 present):
 
-    > cd src/examples/storm-starter
+    > cd topologies
     > mvn compile
-
-To run the Exclamation example:
-
-    > mvn exec:java -Dstorm.topology=storm.starter.ExclamationTopology
 
 To run the simple solution:
 
-    > mvn exec:java -Dstorm.topology=euranova.SimpleTopology
+    > mvn exec:java -Dstorm.topology=euranova.Topology \
+        -Dexec.args="172.17.0.2 172.17.0.3"
 
 To save a `jar` that can be submitted to a cluster:
 
@@ -137,9 +138,10 @@ To run the jar built above against a cluster (using the noteed/storm image):
     > echo 'nimbus.host: "172.17.0.4"' > .storm/storm.yaml
     > ./release/bin/storm jar \
         /source/storm-starter-0.9.2-incubating-jar-with-dependencies.jar \
-        euranova.SimpleTopology stormcase
+        euranova.Topology 172.17.0.2 172.17.0.3 stormcase
 
-Note: the above IP address is the Nimbus container address.
+Note: the above IP addresses are the Nimbus, ZooKeeper, and Kafka container
+addresses.
 
 ## Running
 
@@ -167,9 +169,10 @@ associated IP addresses.
 
 The second step is done by:
 
-    > docker run -v `pwd`:/source noteed/storm /submit.sh 172.17.0.4
+    > docker run -v `pwd`:/source noteed/storm /submit.sh <nimbus> <zk> <kafka> 
 
-Note: `172.17.0.4` is an example Nimbus address, as displayed by `launch.sh`.
+Note: `<nimbus>` is Nimbus address, `<zk>` is ZooKeeper address, and `<kafka>`
+is Kafka address, as displayed by `launch.sh`.
 
 The kafka image can also be used to generate messages:
 

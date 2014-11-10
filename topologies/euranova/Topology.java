@@ -1,20 +1,3 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package euranova;
 
 import backtype.storm.Config;
@@ -57,7 +40,7 @@ import org.json.simple.parser.JSONParser;
 /**
  * This is a basic example of a Storm topology.
  */
-public class SimpleTopology {
+public class Topology {
 
   /*
    * Combine this bolt with a KafkaSpout to expose a stream of model and count
@@ -217,7 +200,7 @@ public class SimpleTopology {
 
   public static class BestModelBolt extends BaseBasicBolt {
     LinkedList<Pair> counts = new LinkedList<Pair>();
-    static final long N_BEST = 3; // How many best models should be reported.
+    static final long N_BEST = 10; // How many best models should be reported.
 
     @Override
     public void execute(Tuple tuple, BasicOutputCollector collector) {
@@ -291,9 +274,17 @@ public class SimpleTopology {
     }
   }
 
+  /*
+   * args[0] must be ZooKeeper host IP, args[1] must be Kafka broker IP.
+   * args[2] can be the topology name. If supplied, the topology is submitted
+   * to a Storm cluster, otherwise the LocalCluster is used.
+   */
   public static void main(String[] args) throws Exception {
+    String zkHost = args[0];
+    String kafkaBroker = args[1];
+
     SpoutConfig kafkaSpoutConf = new SpoutConfig(
-      new ZkHosts("172.17.0.2:2181"), "tickets", "/kafka", "KafkaSpout");
+      new ZkHosts(zkHost + ":2181"), "tickets", "/kafka", "KafkaSpout");
     kafkaSpoutConf.scheme = new SchemeAsMultiScheme(new StringScheme());
 
     TopologyBuilder builder = new TopologyBuilder();
@@ -321,15 +312,15 @@ public class SimpleTopology {
 
     // Configuration for the KafkaBolt.
     Properties props = new Properties();
-    props.put("metadata.broker.list", "172.17.0.3:9092");
+    props.put("metadata.broker.list", kafkaBroker + ":9092");
     props.put("request.required.acks", "1");
     props.put("serializer.class", "kafka.serializer.StringEncoder");
     conf.put(KafkaBolt.KAFKA_BROKER_PROPERTIES, props);
     conf.put(KafkaBolt.TOPIC, "best_models");
 
-    if (args != null && args.length > 0) {
+    if (args != null && args.length > 2) {
       conf.setNumWorkers(3);
-      StormSubmitter.submitTopologyWithProgressBar(args[0], conf, builder.createTopology());
+      StormSubmitter.submitTopologyWithProgressBar(args[2], conf, builder.createTopology());
     }
     else {
       LocalCluster cluster = new LocalCluster();

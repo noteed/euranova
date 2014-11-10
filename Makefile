@@ -23,14 +23,14 @@ images/websocket-server/kafka-websocket-0.8.1-SNAPSHOT-shaded.jar: .image_kafka_
 	docker build -t noteed/storm images/storm
 	touch $@
 
-topologies/target/classes/euranova/SimpleTopology.class: topologies/euranova/SimpleTopology.java
+topologies/target/classes/euranova/Topology.class: topologies/euranova/Topology.java
 	mkdir -p m2
 	docker run \
           -v `pwd`/m2:/home/storm/.m2 \
           -v `pwd`/topologies:/home/storm/topologies \
           noteed/maven sh -c 'cd topologies ; mvn compile'
 
-topologies/target/stormcase-0.1.0-jar-with-dependencies.jar:
+topologies/target/stormcase-0.1.0-jar-with-dependencies.jar: topologies/target/classes/euranova/Topology.class
 	docker run \
           -v `pwd`/m2:/home/storm/.m2 \
           -v `pwd`/topologies:/home/storm/topologies \
