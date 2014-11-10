@@ -1,4 +1,4 @@
-package euranova;
+package com.noteed.stormcase;
 
 import backtype.storm.Config;
 import backtype.storm.Constants;

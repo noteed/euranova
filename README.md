@@ -97,14 +97,10 @@ jar) serving Kafka messages. The jar is needed to build
 
 ### Storm
 
-`images/storm-starter` is an in-progress Docker image to try
-https://github.com/apache/storm/tree/master/examples/storm-starter.
+`images/maven` is a Docker image with the JDK and Maven to build the Storm
+topolgy.
 
 Run the image with:
-
-    > docker run -t -i \
-        -v `pwd`/topologies/euranova:/home/storm/src/examples/storm-starter/src/jvm/euranova \
-        noteed/storm-starter bash
 
     > docker run -t -i \
         -v `pwd`/topologies:/home/storm/topologies \
@@ -121,7 +117,7 @@ present):
 
 To run the simple solution:
 
-    > mvn exec:java -Dstorm.topology=euranova.Topology \
+    > mvn exec:java -Dstorm.topology=com.noteed.stormcase.Topology \
         -Dexec.args="172.17.0.2 172.17.0.3"
 
 To save a `jar` that can be submitted to a cluster:
@@ -138,7 +134,7 @@ To run the jar built above against a cluster (using the noteed/storm image):
     > echo 'nimbus.host: "172.17.0.4"' > .storm/storm.yaml
     > ./release/bin/storm jar \
         /source/storm-starter-0.9.2-incubating-jar-with-dependencies.jar \
-        euranova.Topology 172.17.0.2 172.17.0.3 stormcase
+        com.noteed.stormcase.Topology 172.17.0.2 172.17.0.3 stormcase
 
 Note: the above IP addresses are the Nimbus, ZooKeeper, and Kafka container
 addresses.
