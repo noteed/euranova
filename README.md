@@ -1,3 +1,18 @@
+This is the code I have produced for EURA NOVA's recruitment process last year
+(i.e. october 2014). This was fun as I learned about Storm. This was also a lot
+of work since
+
+- Storm or Kafka were new to me
+- I haven't work with the JVM for a long time
+- parts of Storm are in Clojure
+- in addition to implementing the core elements (the Storm topology), they also
+  asked for some real-time UI, that the result could be deployed on their own
+  laptops easily, ...
+
+I also felt it was quite abusive since in addition to the large amount of work,
+the process was quite obscure and lack any concrete feedback.
+
+
 # Storm case
 
 A case for Eura Nova's recruitment process using Apache Storm and the JVM.
